@@ -2,57 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Uniswap V3 Dashboard Design System - All colors MUST be HSL */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Dark theme base */
+    --background: 222 84% 3.5%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 225 25% 8%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 225 25% 8%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Uniswap brand colors */
+    --primary: 315 100% 70%;
+    --primary-foreground: 210 40% 2%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 263 85% 35%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 225 25% 12%;
+    --muted-foreground: 215 16% 57%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 276 100% 75%;
+    --accent-foreground: 210 40% 2%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* Status colors */
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    
+    --warning: 43 96% 56%;
+    --warning-foreground: 210 40% 2%;
+    
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 225 25% 15%;
+    --input: 225 25% 12%;
+    --ring: 315 100% 70%;
 
-    --radius: 0.5rem;
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(315 100% 70%), hsl(276 100% 75%));
+    --gradient-secondary: linear-gradient(135deg, hsl(263 85% 35%), hsl(276 100% 75%));
+    --gradient-card: linear-gradient(135deg, hsl(225 25% 8%), hsl(225 25% 12%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 45%));
+    --gradient-warning: linear-gradient(135deg, hsl(43 96% 56%), hsl(43 96% 65%));
+    
+    /* Shadows with brand colors */
+    --shadow-primary: 0 10px 40px -10px hsl(315 100% 70% / 0.3);
+    --shadow-card: 0 4px 20px -2px hsl(225 25% 2% / 0.8);
+    --shadow-glow: 0 0 30px hsl(315 100% 70% / 0.2);
 
-    --sidebar-background: 0 0% 98%;
+    --radius: 0.75rem;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar dark theme */
+    --sidebar-background: 225 25% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 315 100% 70%;
+    --sidebar-primary-foreground: 210 40% 2%;
+    --sidebar-accent: 225 25% 10%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 225 25% 15%;
+    --sidebar-ring: 315 100% 70%;
   }
 
   .dark {
