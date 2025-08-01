@@ -1,5 +1,5 @@
 // Configuración de APIs para conectar el dashboard con el servidor simple
-const API_BASE_URL = 'http://localhost:5678';
+const API_BASE_URL = 'http://localhost:5680';
 
 export const API_ENDPOINTS = {
   positions: `${API_BASE_URL}/api/positions`,
