@@ -40,8 +40,23 @@ export const analyzeWallet = async (walletAddress) => {
 
 // Get portfolio overview for a wallet
 export const getPortfolio = async (walletAddress) => {
+  // Si se llama sin wallet address, retorna datos vacíos sin hacer llamada
   if (!walletAddress) {
-    return { success: false, data: null };
+    console.log('getPortfolio called without wallet address, returning empty data');
+    return { 
+      success: true, 
+      data: {
+        totalPositions: 0,
+        pools: [],
+        totalValue: 0,
+        totalFees: 0,
+        performance: {
+          day: 0,
+          week: 0,
+          month: 0
+        }
+      }
+    };
   }
   
   try {
@@ -62,7 +77,8 @@ export const getPortfolio = async (walletAddress) => {
 // Get positions for a wallet
 export const getPositions = async (walletAddress) => {
   if (!walletAddress) {
-    return { success: false, data: [] };
+    console.log('getPositions called without wallet address, returning empty data');
+    return { success: true, data: [] };
   }
 
   try {
@@ -100,7 +116,16 @@ export const getPoolAnalysis = async () => {
 // Get portfolio optimization suggestions
 export const getPortfolioOptimization = async (walletAddress) => {
   if (!walletAddress) {
-    return { success: false, data: null };
+    console.log('getPortfolioOptimization called without wallet address, returning empty data');
+    return { 
+      success: true, 
+      data: {
+        recommendations: [],
+        optimizedAllocation: {},
+        expectedAPY: 0,
+        riskScore: 'N/A'
+      }
+    };
   }
 
   try {
