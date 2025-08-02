@@ -51,15 +51,37 @@ const Index = () => {
     setWalletAddress(address);
 
     try {
-      // Fetch positions from the API
-      const response = await fetch(`${API_CONFIG.baseURL}/api/analyze/${address}`);
-      const data = await response.json();
+      // Log the API URL for debugging
+      console.log('🔍 Analyzing wallet:', address);
+      console.log('📡 API URL:', `${API_CONFIG.baseURL}/api/analyze/${address}`);
 
+      // Fetch positions from the API
+      const response = await fetch(`${API_CONFIG.baseURL}/api/analyze/${address}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📊 Response status:', response.status);
+
+      // Check if response is ok
       if (!response.ok) {
+        if (response.status === 0) {
+          throw new Error('Cannot connect to API. Please check if the API server is running and CORS is configured correctly.');
+        }
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📦 API Response:', data);
+
+      if (!data.success) {
         throw new Error(data.error || 'Failed to fetch wallet data');
       }
 
-      if (!data.data.hasPositions) {
+      // Check if wallet has positions
+      if (!data.data || !data.data.hasPositions) {
         setError('No Uniswap V3 positions found for this wallet');
         setPositions([]);
         return;
@@ -81,23 +103,73 @@ const Index = () => {
       }));
 
       setPositions(transformedPositions);
+      console.log('✅ Positions transformed:', transformedPositions);
 
       // Fetch portfolio overview
-      const portfolioResponse = await fetch(`${API_CONFIG.baseURL}/api/portfolio/${address}`);
-      const portfolioData = await portfolioResponse.json();
-      
-      if (portfolioResponse.ok) {
-        setPortfolioData(portfolioData.data);
+      try {
+        console.log('📊 Fetching portfolio data...');
+        const portfolioResponse = await fetch(`${API_CONFIG.baseURL}/api/portfolio/${address}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (portfolioResponse.ok) {
+          const portfolioData = await portfolioResponse.json();
+          console.log('💼 Portfolio data:', portfolioData);
+          setPortfolioData(portfolioData.data);
+        }
+      } catch (portfolioError) {
+        console.error('Error fetching portfolio:', portfolioError);
+        // Don't fail the whole request if portfolio fetch fails
       }
 
-    } catch (err) {
-      console.error('Error analyzing wallet:', err);
-      setError(err.message || 'Failed to analyze wallet');
+    } catch (err: any) {
+      console.error('❌ Error analyzing wallet:', err);
+      
+      // Provide user-friendly error messages
+      if (err.message.includes('CORS')) {
+        setError('Connection blocked by browser security. The API server needs to allow requests from this domain.');
+      } else if (err.message.includes('Failed to fetch')) {
+        setError('Cannot connect to the API server. Please ensure the server is running.');
+      } else if (err.message.includes('The Graph')) {
+        setError('Error querying blockchain data. Please try again later.');
+      } else {
+        setError(err.message || 'Failed to analyze wallet');
+      }
+      
       setPositions([]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Check API health on component mount
+  useEffect(() => {
+    const checkAPIHealth = async () => {
+      try {
+        console.log('🏥 Checking API health...');
+        console.log('🌐 API Base URL:', API_CONFIG.baseURL);
+        
+        const response = await fetch(`${API_CONFIG.baseURL}/`, {
+          method: 'GET',
+          mode: 'cors',
+        });
+        
+        if (response.ok) {
+          console.log('✅ API is healthy');
+        } else {
+          console.warn('⚠️ API returned status:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ API health check failed:', error);
+        console.log('💡 Make sure the API server is running and CORS is properly configured');
+      }
+    };
+
+    checkAPIHealth();
+  }, []);
 
   // Use mock data if no wallet is selected
   const displayPositions = walletAddress ? positions : mockPositions;
@@ -119,11 +191,14 @@ const Index = () => {
       {error && !isLoading && (
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
           <p className="text-destructive">{error}</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            API URL: {API_CONFIG.baseURL}
+          </p>
         </div>
       )}
 
       {/* Show wallet address if selected */}
-      {walletAddress && !isLoading && !error && (
+      {walletAddress && !isLoading && !error && positions.length > 0 && (
         <div className="bg-muted/50 rounded-lg p-4">
           <p className="text-sm text-muted-foreground">
             Showing positions for: <span className="font-mono">{walletAddress}</span>
