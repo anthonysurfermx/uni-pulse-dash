@@ -5,6 +5,7 @@ import { AlertsPanel } from "@/components/AlertsPanel";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { WalletInput } from "@/components/WalletInput";
+import NFTPositionsSection from "@/components/NFTPositionsSection"; // NUEVA IMPORTACIÓN
 import { API_CONFIG } from "@/config/api";
 import { Loader2 } from "lucide-react";
 
@@ -80,30 +81,31 @@ const Index = () => {
         throw new Error(data.error || 'Failed to fetch wallet data');
       }
 
-      // Check if wallet has positions
-      if (!data.data || !data.data.hasPositions) {
-        setError('No Uniswap V3 positions found for this wallet');
+      // Check if wallet has NFT positions - pero no mostrar error
+      if (!data.data || !data.data.positions || data.data.positions.length === 0) {
+        // NO mostrar error, solo dejar vacías las posiciones tradicionales
         setPositions([]);
-        return;
+        console.log('ℹ️ No traditional positions, checking for NFT positions...');
+        // NO hacer return aquí para que continúe y muestre los NFTs
+      } else {
+        // Transform the data to match our component format
+        const transformedPositions = data.data.positions.map((pos: any) => ({
+          tokenPair: pos.pool,
+          currentPrice: 0, // Would need price oracle
+          minPrice: parseInt(pos.range?.lower || '0'),
+          maxPrice: parseInt(pos.range?.upper || '0'),
+          inRange: pos.inRange || true,
+          unclaimedFees: `$${pos.fees || 0}`,
+          apr: 0, // Would need calculation
+          impermanentLoss: 0, // Would need calculation
+          liquidity: pos.liquidity || 'N/A',
+          volume24h: "N/A",
+          feeTier: pos.feeTier,
+        }));
+
+        setPositions(transformedPositions);
+        console.log('✅ Positions transformed:', transformedPositions);
       }
-
-      // Transform the data to match our component format
-      const transformedPositions = data.data.positions.map((pos: any) => ({
-        tokenPair: pos.pool,
-        currentPrice: 0, // Would need price oracle
-        minPrice: parseInt(pos.range.lower),
-        maxPrice: parseInt(pos.range.upper),
-        inRange: true, // Would need current tick
-        unclaimedFees: `$${pos.fees.total}`,
-        apr: 0, // Would need calculation
-        impermanentLoss: 0, // Would need calculation
-        liquidity: pos.liquidity,
-        volume24h: "N/A",
-        feeTier: pos.feeTier,
-      }));
-
-      setPositions(transformedPositions);
-      console.log('✅ Positions transformed:', transformedPositions);
 
       // Fetch portfolio overview
       try {
@@ -198,7 +200,7 @@ const Index = () => {
       )}
 
       {/* Show wallet address if selected */}
-      {walletAddress && !isLoading && !error && positions.length > 0 && (
+      {walletAddress && !isLoading && !error && (
         <div className="bg-muted/50 rounded-lg p-4">
           <p className="text-sm text-muted-foreground">
             Showing positions for: <span className="font-mono">{walletAddress}</span>
@@ -236,6 +238,11 @@ const Index = () => {
           </div>
         )}
       </div>
+
+      {/* NUEVA SECCIÓN: NFT Positions */}
+      {walletAddress && !isLoading && (
+        <NFTPositionsSection walletAddress={walletAddress} />
+      )}
 
       {/* Transaction History */}
       <TransactionHistory walletAddress={walletAddress} />
