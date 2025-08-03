@@ -2,9 +2,8 @@
 const isProd = import.meta.env.PROD;
 
 export const API_CONFIG = {
-  baseURL: isProd
-    ? 'https://uniswap-v3-ai-agent-production.up.railway.app'
-    : 'http://localhost:5679',
+  // Usar Railway tanto en desarrollo como en producción
+  baseURL: 'https://uniswap-v3-ai-agent-production.up.railway.app',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
