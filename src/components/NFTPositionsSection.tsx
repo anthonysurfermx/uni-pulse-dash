@@ -1,252 +1,227 @@
-import { useState, useEffect } from 'react';
-import { PortfolioOverview } from "@/components/PortfolioOverview";
-import { PositionCard } from "@/components/PositionCard";
-import { AlertsPanel } from "@/components/AlertsPanel";
-import { TransactionHistory } from "@/components/TransactionHistory";
-import { PerformanceChart } from "@/components/PerformanceChart";
-import { WalletInput } from "@/components/WalletInput";
-import NFTPositionsSection from "@/components/NFTPositionsSection"; // NUEVA IMPORTACIÓN
-import { API_CONFIG } from "@/config/api";
-import { Loader2 } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Droplets, TrendingUp, ExternalLink, RefreshCw } from 'lucide-react';
 
-const Index = () => {
-  const [walletAddress, setWalletAddress] = useState('');
-  const [positions, setPositions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [portfolioData, setPortfolioData] = useState(null);
+// Tipos para las posiciones NFT
+interface TickRange {
+  min: string;
+  max: string;
+  raw: string;
+}
 
-  // Mock data for when no wallet is selected
-  const mockPositions = [
-    {
-      tokenPair: "ETH/USDC",
-      currentPrice: 2387.45,
-      minPrice: 2200.00,
-      maxPrice: 2600.00,
-      inRange: false,
-      unclaimedFees: "$127.50",
-      apr: 18.2,
-      impermanentLoss: -2.3,
-      liquidity: "$8,450.23",
-      volume24h: "$2.1M",
-      feeTier: "0.05%",
-    },
-    {
-      tokenPair: "UNI/ETH",
-      currentPrice: 0.00285,
-      minPrice: 0.0025,
-      maxPrice: 0.0035,
-      inRange: true,
-      unclaimedFees: "$89.32",
-      apr: 22.3,
-      impermanentLoss: -0.8,
-      liquidity: "$5,642.18",
-      volume24h: "$890K",
-      feeTier: "0.30%",
-    },
-  ];
+interface NFTPosition {
+  id: string;
+  name: string;
+  pool: string;
+  feeTier: string;
+  tickRange: TickRange;
+  image: string;
+  contractAddress: string;
+  blockNumber: string;
+  liquidity: number;
+  fees: number;
+  value: number;
+}
 
-  const analyzeWallet = async (address: string) => {
-    setIsLoading(true);
-    setError('');
-    setWalletAddress(address);
+interface NFTPositionsSectionProps {
+  walletAddress?: string;
+}
 
+// Componente principal de la sección NFT
+export default function NFTPositionsSection({ 
+  walletAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' 
+}: NFTPositionsSectionProps) {
+  const [positions, setPositions] = useState<NFTPosition[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Función para obtener las posiciones
+  const fetchPositions = async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      // Log the API URL for debugging
-      console.log('🔍 Analyzing wallet:', address);
-      console.log('📡 API URL:', `${API_CONFIG.baseURL}/api/analyze/${address}`);
-
-      // Fetch positions from the API
-      const response = await fetch(`${API_CONFIG.baseURL}/api/analyze/${address}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log('📊 Response status:', response.status);
-
-      // Check if response is ok
-      if (!response.ok) {
-        if (response.status === 0) {
-          throw new Error('Cannot connect to API. Please check if the API server is running and CORS is configured correctly.');
-        }
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('📦 API Response:', data);
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch wallet data');
-      }
-
-      // Check if wallet has positions
-      if (!data.data || !data.data.hasPositions) {
-        setError('No Uniswap V3 positions found for this wallet');
-        setPositions([]);
-        return;
-      }
-
-      // Transform the data to match our component format
-      const transformedPositions = data.data.positions.map((pos: any) => ({
-        tokenPair: pos.pool,
-        currentPrice: 0, // Would need price oracle
-        minPrice: parseInt(pos.range.lower),
-        maxPrice: parseInt(pos.range.upper),
-        inRange: true, // Would need current tick
-        unclaimedFees: `$${pos.fees.total}`,
-        apr: 0, // Would need calculation
-        impermanentLoss: 0, // Would need calculation
-        liquidity: pos.liquidity,
-        volume24h: "N/A",
-        feeTier: pos.feeTier,
-      }));
-
-      setPositions(transformedPositions);
-      console.log('✅ Positions transformed:', transformedPositions);
-
-      // Fetch portfolio overview
-      try {
-        console.log('📊 Fetching portfolio data...');
-        const portfolioResponse = await fetch(`${API_CONFIG.baseURL}/api/portfolio/${address}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (portfolioResponse.ok) {
-          const portfolioData = await portfolioResponse.json();
-          console.log('💼 Portfolio data:', portfolioData);
-          setPortfolioData(portfolioData.data);
-        }
-      } catch (portfolioError) {
-        console.error('Error fetching portfolio:', portfolioError);
-        // Don't fail the whole request if portfolio fetch fails
-      }
-
-    } catch (err: any) {
-      console.error('❌ Error analyzing wallet:', err);
+      const response = await fetch(
+        `https://uniswap-v3-ai-agent-production.up.railway.app/api/analyze/${walletAddress}`
+      );
+      const result = await response.json();
       
-      // Provide user-friendly error messages
-      if (err.message.includes('CORS')) {
-        setError('Connection blocked by browser security. The API server needs to allow requests from this domain.');
-      } else if (err.message.includes('Failed to fetch')) {
-        setError('Cannot connect to the API server. Please ensure the server is running.');
-      } else if (err.message.includes('The Graph')) {
-        setError('Error querying blockchain data. Please try again later.');
+      if (result.success && result.data.positions) {
+        setPositions(result.data.positions);
       } else {
-        setError(err.message || 'Failed to analyze wallet');
+        setError('No se pudieron cargar las posiciones');
       }
-      
-      setPositions([]);
+    } catch (err) {
+      setError('Error al conectar con el servidor');
+      console.error('Error fetching positions:', err);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // Check API health on component mount
   useEffect(() => {
-    const checkAPIHealth = async () => {
-      try {
-        console.log('🏥 Checking API health...');
-        console.log('🌐 API Base URL:', API_CONFIG.baseURL);
-        
-        const response = await fetch(`${API_CONFIG.baseURL}/`, {
-          method: 'GET',
-          mode: 'cors',
-        });
-        
-        if (response.ok) {
-          console.log('✅ API is healthy');
-        } else {
-          console.warn('⚠️ API returned status:', response.status);
-        }
-      } catch (error) {
-        console.error('❌ API health check failed:', error);
-        console.log('💡 Make sure the API server is running and CORS is properly configured');
-      }
-    };
-
-    checkAPIHealth();
-  }, []);
-
-  // Use mock data if no wallet is selected
-  const displayPositions = walletAddress ? positions : mockPositions;
+    fetchPositions();
+  }, [walletAddress]);
 
   return (
-    <div className="space-y-6">
-      {/* Wallet Input */}
-      <WalletInput onAnalyze={analyzeWallet} isLoading={isLoading} />
-
-      {/* Show loading state */}
-      {isLoading && (
-        <div className="flex items-center justify-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Analyzing wallet positions...</span>
-        </div>
-      )}
-
-      {/* Show error if any */}
-      {error && !isLoading && (
-        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-          <p className="text-destructive">{error}</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            API URL: {API_CONFIG.baseURL}
-          </p>
-        </div>
-      )}
-
-      {/* Show wallet address if selected */}
-      {walletAddress && !isLoading && !error && positions.length > 0 && (
-        <div className="bg-muted/50 rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">
-            Showing positions for: <span className="font-mono">{walletAddress}</span>
-          </p>
-        </div>
-      )}
-
-      {/* Portfolio Overview */}
-      <PortfolioOverview data={portfolioData} walletAddress={walletAddress} />
-      
-      {/* Charts and Alerts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <PerformanceChart walletAddress={walletAddress} />
-        </div>
+    <div className="mt-10 pt-10 border-t border-gray-800">
+      {/* Header de la sección */}
+      <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
-          <AlertsPanel />
+          <h2 className="text-2xl font-bold flex items-center gap-3">
+            <Droplets className="w-7 h-7 text-pink-500" />
+            Your NFT Positions
+          </h2>
+          <p className="text-gray-400 mt-1">
+            Uniswap V3 Liquidity Positions
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button 
+            onClick={fetchPositions} 
+            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 rounded-lg font-medium text-sm flex items-center gap-2 transition-opacity">
+            View All Positions
+            <ExternalLink className="w-3 h-3" />
+          </button>
         </div>
       </div>
 
-      {/* Positions Grid */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-foreground">
-          {walletAddress ? 'Wallet Positions' : 'Example Positions'}
-        </h2>
-        {displayPositions.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
-            {displayPositions.map((position, index) => (
-              <PositionCard key={index} {...position} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center p-8 text-muted-foreground">
-            {walletAddress ? 'No positions found' : 'Enter a wallet address to see positions'}
-          </div>
-        )}
-      </div>
-
-      {/* NUEVA SECCIÓN: NFT Positions */}
-      {walletAddress && (
-        <NFTPositionsSection walletAddress={walletAddress} />
+      {/* Content */}
+      {loading ? (
+        <LoadingGrid />
+      ) : error ? (
+        <ErrorState message={error} onRetry={fetchPositions} />
+      ) : positions.length > 0 ? (
+        <NFTGrid positions={positions.slice(0, 4)} />
+      ) : (
+        <EmptyState />
       )}
-
-      {/* Transaction History */}
-      <TransactionHistory walletAddress={walletAddress} />
     </div>
   );
-};
+}
 
-export default Index;
+// Componente Grid de NFTs
+function NFTGrid({ positions }: { positions: NFTPosition[] }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      {positions.map((position) => (
+        <NFTMiniCard key={position.id} position={position} />
+      ))}
+    </div>
+  );
+}
+
+// Componente de tarjeta individual
+function NFTMiniCard({ position }: { position: NFTPosition }) {
+  const [imageError, setImageError] = useState<boolean>(false);
+  
+  const formatNumber = (num: number): string => {
+    return new Intl.NumberFormat('en-US', { 
+      maximumFractionDigits: 0 
+    }).format(num || 0);
+  };
+
+  return (
+    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-pink-500/50 hover:shadow-lg hover:shadow-pink-500/10 cursor-pointer">
+      <div className="relative h-48 bg-gray-950">
+        {!imageError && position.image ? (
+          <img
+            src={position.image}
+            alt={`${position.pool} Position`}
+            className="w-full h-full object-cover"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-500/10 to-purple-600/10">
+            <Droplets className="w-12 h-12 text-gray-700" />
+          </div>
+        )}
+        <div className="absolute top-3 right-3 px-3 py-1 bg-pink-500/90 backdrop-blur-sm rounded-full text-xs font-semibold">
+          {position.feeTier || 'N/A'}
+        </div>
+      </div>
+      
+      <div className="p-5">
+        <h3 className="text-lg font-semibold mb-1">{position.pool || 'Unknown Pool'}</h3>
+        <p className="text-gray-500 text-sm font-mono mb-4">
+          Position #{position.id}
+        </p>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-800/50 rounded-lg p-3">
+            <div className="text-xs text-gray-400 uppercase mb-1">Liquidity</div>
+            <div className="font-semibold">{formatNumber(position.liquidity)}</div>
+          </div>
+          <div className="bg-gray-800/50 rounded-lg p-3">
+            <div className="text-xs text-gray-400 uppercase mb-1">Fees</div>
+            <div className="font-semibold">${formatNumber(position.fees)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Estados de carga
+function LoadingGrid() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-pulse">
+          <div className="h-48 bg-gray-800/50"></div>
+          <div className="p-5">
+            <div className="h-5 bg-gray-800/50 rounded mb-2"></div>
+            <div className="h-4 bg-gray-800/50 rounded w-2/3 mb-4"></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-16 bg-gray-800/50 rounded"></div>
+              <div className="h-16 bg-gray-800/50 rounded"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Estado vacío
+function EmptyState() {
+  return (
+    <div className="text-center py-16 px-8 bg-gray-900/30 rounded-2xl border border-dashed border-gray-800">
+      <Droplets className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+      <h3 className="text-lg font-semibold mb-2">No NFT Positions Found</h3>
+      <p className="text-gray-400 mb-6">
+        Connect your wallet or provide liquidity on Uniswap V3 to see your positions here.
+      </p>
+      <button className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 rounded-lg font-medium transition-opacity">
+        Connect Wallet
+      </button>
+    </div>
+  );
+}
+
+// Estado de error
+interface ErrorStateProps {
+  message: string;
+  onRetry: () => void;
+}
+
+function ErrorState({ message, onRetry }: ErrorStateProps) {
+  return (
+    <div className="text-center py-16 px-8 bg-red-900/10 rounded-2xl border border-red-900/20">
+      <TrendingUp className="w-12 h-12 text-red-500 mx-auto mb-4" />
+      <h3 className="text-lg font-semibold mb-2">Oops! Something went wrong</h3>
+      <p className="text-gray-400 mb-6">{message}</p>
+      <button 
+        className="px-6 py-3 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors"
+        onClick={onRetry}
+      >
+        Try Again
+      </button>
+    </div>
+  );
+}

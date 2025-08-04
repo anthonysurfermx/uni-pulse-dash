@@ -221,10 +221,15 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Positions Grid */}
+      {/* NFT Positions Section - MOVIDO AQUÍ, ANTES DE LAS POSICIONES TRADICIONALES */}
+      {walletAddress && !isLoading && (
+        <NFTPositionsSection walletAddress={walletAddress} />
+      )}
+
+      {/* Traditional Positions Grid */}
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-foreground">
-          {walletAddress ? 'Wallet Positions' : 'Example Positions'}
+          {walletAddress ? 'Traditional LP Positions' : 'Example Positions'}
         </h2>
         {displayPositions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
@@ -234,15 +239,10 @@ const Index = () => {
           </div>
         ) : (
           <div className="text-center p-8 text-muted-foreground">
-            {walletAddress ? 'No positions found' : 'Enter a wallet address to see positions'}
+            {walletAddress ? 'No traditional LP positions found' : 'Enter a wallet address to see positions'}
           </div>
         )}
       </div>
-
-      {/* NUEVA SECCIÓN: NFT Positions */}
-      {walletAddress && !isLoading && (
-        <NFTPositionsSection walletAddress={walletAddress} />
-      )}
 
       {/* Transaction History */}
       <TransactionHistory walletAddress={walletAddress} />
@@ -250,4 +250,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Index;  
