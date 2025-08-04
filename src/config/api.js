@@ -2,8 +2,8 @@
 const isProd = import.meta.env.PROD;
 
 export const API_CONFIG = {
-  // Usar Railway tanto en desarrollo como en producción
-  baseURL: 'https://uniswap-v3-ai-agent-production.up.railway.app',
+  // Usar variable de entorno o la URL de Vercel por defecto
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://uniswap-v3-ai-agent.vercel.app',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
