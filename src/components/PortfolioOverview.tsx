@@ -1,209 +1,316 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Percent, Wallet } from "lucide-react";
+// src/components/PortfolioOverview.tsx - Actualizado para ENVIO V4
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { API_CONFIG } from '../config/api';
+import { Progress } from "@/components/ui/progress";
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign, 
+  Activity,
+  Zap,
+  Target,
+  BarChart3,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  ArrowUpRight,
+  ArrowDownRight,
+  Wallet
+} from "lucide-react";
+import { PortfolioData } from '@/hooks/usePortfolio';
 
 interface PortfolioOverviewProps {
-  data?: any;
-  walletAddress?: string;
+  walletAddress: string;
+  data: PortfolioData | null;
 }
 
-export const PortfolioOverview: React.FC<PortfolioOverviewProps> = ({ data, walletAddress }) => {
-  const [portfolioData, setPortfolioData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchPortfolioData = async () => {
-      // Si no hay wallet address, mostrar estado vacío
-      if (!walletAddress) {
-        setPortfolioData(null);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetch(`${API_CONFIG.baseURL}/api/portfolio/${walletAddress}`);
-        const result = await response.json();
-        
-        console.log('📊 Portfolio data:', result);
-        
-        if (result.success) {
-          setPortfolioData(result.data);
-        } else {
-          setError(result.error || 'Failed to load portfolio data');
-        }
-      } catch (err) {
-        setError('Failed to connect to API');
-        console.error('Portfolio fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPortfolioData();
-    
-    // Refresh every 30 seconds if wallet is selected
-    if (walletAddress) {
-      const interval = setInterval(fetchPortfolioData, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [walletAddress]);
-
-  // Use passed data if available
-  const displayData = data || portfolioData;
-
-  // Loading state
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {[1,2,3,4].map(i => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium bg-gray-200 h-4 w-24 rounded"></CardTitle>
-              <div className="bg-gray-200 h-4 w-4 rounded"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-gray-200 h-8 w-20 rounded mb-2"></div>
-              <div className="bg-gray-200 h-4 w-16 rounded"></div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  // Error state
-  if (error && walletAddress) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="col-span-full">
-          <CardContent className="pt-6">
-            <div className="text-center text-red-500">
-              <p>⚠️ {error}</p>
-              <p className="text-sm text-gray-500 mt-2">Please check the wallet address</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // No wallet selected state
+export const PortfolioOverview: React.FC<PortfolioOverviewProps> = ({ 
+  walletAddress, 
+  data 
+}) => {
+  // Si no hay wallet address, mostrar estado vacío
   if (!walletAddress) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {[
-          { title: "Total Value Locked", value: "$0.00", icon: DollarSign },
-          { title: "Total Unclaimed Fees", value: "$0.00", icon: TrendingUp },
-          { title: "Average APR", value: "0%", icon: Percent },
-          { title: "Active Positions", value: "0", icon: Wallet },
-        ].map((stat, index) => (
-          <Card key={index} className="opacity-60">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Enter a wallet address to see data
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <Wallet className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Wallet Connected</h3>
+            <p className="text-muted-foreground">
+              Enter a wallet address above to start analyzing Uniswap V4 positions
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
-  // No data found for wallet
-  if (!displayData && walletAddress) {
+  // Si no hay datos, mostrar loading o error
+  if (!data) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="col-span-full">
-          <CardContent className="pt-6">
-            <div className="text-center text-gray-500">
-              <Wallet className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-              <p>No Uniswap V3 positions found</p>
-              <p className="text-sm mt-1">Wallet: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</p>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <div className="animate-pulse">
+              <div className="w-12 h-12 bg-muted rounded-full mx-auto mb-4"></div>
+              <div className="h-4 bg-muted rounded w-48 mx-auto mb-2"></div>
+              <div className="h-3 bg-muted rounded w-32 mx-auto"></div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header con información general */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        {/* Total Value Locked */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Volume</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data.totalValueLocked}</div>
+            <p className="text-xs text-muted-foreground">
+              Total trading volume
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Total Fees Collected */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Fees Collected</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{data.totalFeesCollected}</div>
+            <p className="text-xs text-muted-foreground">
+              LP rewards earned
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Active Positions */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Positions</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data.activePositions}</div>
+            <p className="text-xs text-muted-foreground">
+              Currently earning fees
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Total Swaps */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Swaps</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data.totalSwaps}</div>
+            <p className="text-xs text-muted-foreground">
+              Trading transactions
+            </p>
           </CardContent>
         </Card>
       </div>
-    );
-  }
 
-  // Calculate stats from real data
-  const totalPositions = displayData.totalPositions || 0;
-  const pools = displayData.pools || [];
-  const tvl = displayData.totalValue || 0;
-  const fees = displayData.totalFees || 0;
+      {/* Protocol Overview (si está disponible) */}
+      {data.protocolOverview && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Protocol Overview
+              <Badge variant="secondary">Uniswap V4</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Pools</p>
+                <p className="text-2xl font-bold">{data.protocolOverview.totalPools.toLocaleString()}</p>
+              </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Protocol Volume</p>
+                <p className="text-2xl font-bold">
+                  ${(data.protocolOverview.totalVolumeUSD / 1e6).toFixed(1)}M
+                </p>
+              </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Protocol Fees</p>
+                <p className="text-2xl font-bold">
+                  ${(data.protocolOverview.totalFeesUSD / 1e3).toFixed(1)}K
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-  const stats = [
-    {
-      title: "Total Value Locked",
-      value: `$${tvl.toLocaleString()}`,
-      change: pools.length > 0 ? `${pools.length} pools` : "No active pools",
-      changeType: pools.length > 0 ? "positive" : "neutral",
-      icon: DollarSign,
-    },
-    {
-      title: "Total Unclaimed Fees", 
-      value: `$${fees.toLocaleString()}`,
-      change: fees > 0 ? "Ready to collect" : "No fees",
-      changeType: fees > 0 ? "positive" : "neutral",
-      icon: TrendingUp,
-    },
-    {
-      title: "Performance",
-      value: displayData.performance?.week ? `${displayData.performance.week}%` : "N/A",
-      change: "7 day change",
-      changeType: displayData.performance?.week > 0 ? "positive" : "negative",
-      icon: Percent,
-    },
-    {
-      title: "Active Positions",
-      value: totalPositions.toString(),
-      change: walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "",
-      changeType: "neutral",
-      icon: Wallet,
-    },
-  ];
+      {/* Positions Details */}
+      {data.positions && data.positions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Liquidity Positions ({data.positions.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {data.positions.slice(0, 5).map((position: any, index: number) => (
+                <div key={position.id || index} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline">
+                        {position.pool?.currency0?.symbol || 'TOKEN0'}/
+                        {position.pool?.currency1?.symbol || 'TOKEN1'}
+                      </Badge>
+                      <Badge variant="secondary">
+                        {position.pool?.fee ? (position.pool.fee / 10000).toFixed(2) + '%' : '0.3%'}
+                      </Badge>
+                      {parseFloat(position.liquidity) > 0 ? (
+                        <Badge variant="default" className="bg-green-500">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Inactive
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        Liquidity: {parseFloat(position.liquidity || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {stats.map((stat, index) => {
-        const Icon = stat.icon;
-        return (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              {stat.changeType !== "neutral" ? (
-                <Badge
-                  variant={stat.changeType === "positive" ? "default" : "destructive"}
-                  className="mt-1"
-                >
-                  {stat.changeType === "positive" ? (
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3 mr-1" />
-                  )}
-                  {stat.change}
-                </Badge>
-              ) : (
-                <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Deposited</p>
+                      <p className="font-medium">
+                        {(parseFloat(position.depositedToken0) / 1e18).toFixed(6)} {position.pool?.currency0?.symbol}
+                      </p>
+                      <p className="font-medium">
+                        {(parseFloat(position.depositedToken1) / 1e18).toFixed(6)} {position.pool?.currency1?.symbol}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Fees Earned</p>
+                      <p className="font-medium text-green-600">
+                        {(parseFloat(position.collectedFeesToken0) / 1e18).toFixed(6)} {position.pool?.currency0?.symbol}
+                      </p>
+                      <p className="font-medium text-green-600">
+                        {(parseFloat(position.collectedFeesToken1) / 1e18).toFixed(6)} {position.pool?.currency1?.symbol}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Range Status */}
+                  <div className="mt-3 pt-3 border-t">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Position Range</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">
+                          {position.tickLower} - {position.tickUpper}
+                        </span>
+                        {position.pool?.tick >= position.tickLower && position.pool?.tick <= position.tickUpper ? (
+                          <Badge variant="default" className="bg-green-500">In Range</Badge>
+                        ) : (
+                          <Badge variant="destructive">Out of Range</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {data.positions.length > 5 && (
+                <div className="text-center pt-4">
+                  <Badge variant="outline">
+                    +{data.positions.length - 5} more positions
+                  </Badge>
+                </div>
               )}
-            </CardContent>
-          </Card>
-        );
-      })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Activity */}
+      {data.recentActivity && data.recentActivity.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {data.recentActivity.map((activity: any, index: number) => (
+                <div key={activity.id || index} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {parseFloat(activity.amount0) > 0 ? (
+                      <ArrowUpRight className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <ArrowDownRight className="w-4 h-4 text-red-500" />
+                    )}
+                    <div>
+                      <p className="font-medium">
+                        {activity.pool?.currency0?.symbol || 'TOKEN0'}/
+                        {activity.pool?.currency1?.symbol || 'TOKEN1'} Swap
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(parseInt(activity.timestamp) * 1000).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <p className="font-medium">
+                      {activity.amountUSD ? `$${parseFloat(activity.amountUSD).toFixed(2)}` : 'N/A'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {parseFloat(activity.amount0) > 0 ? 'Buy' : 'Sell'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State para cuando no hay datos */}
+      {(!data.positions || data.positions.length === 0) && (!data.recentActivity || data.recentActivity.length === 0) && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Activity Found</h3>
+              <p className="text-muted-foreground">
+                This wallet doesn't have any Uniswap V4 positions or trading activity yet.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

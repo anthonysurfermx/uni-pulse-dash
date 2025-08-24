@@ -1,6 +1,7 @@
-import { Wallet, Bell, Settings } from "lucide-react";
+import { Bell, Settings } from "lucide-react";  // <- Quité Wallet
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { WalletButton } from "@/components/web3/WalletButton";  // <- NUEVA IMPORTACIÓN
 
 export const Header = () => {
   return (
@@ -30,10 +31,8 @@ export const Header = () => {
             <Settings className="h-5 w-5" />
           </Button>
 
-          <Button variant="connect" className="gap-2">
-            <Wallet className="h-4 w-4" />
-            0x1234...5678
-          </Button>
+          {/* Reemplazado botón hardcodeado con WalletButton real */}
+          <WalletButton />
         </div>
       </div>
     </header>

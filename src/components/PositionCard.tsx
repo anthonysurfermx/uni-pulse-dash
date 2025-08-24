@@ -1,125 +1,179 @@
+// src/components/PositionCard.tsx - Corregido con validaciones
+
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Settings, AlertTriangle } from "lucide-react";
+import { AlertTriangle, TrendingUp, DollarSign, Activity } from "lucide-react";
 
-interface PositionCardProps {
-  tokenPair: string;
-  currentPrice: number;
-  minPrice: number;
-  maxPrice: number;
-  inRange: boolean;
-  unclaimedFees: string;
-  apr: number;
-  impermanentLoss: number;
-  liquidity: string;
-  volume24h: string;
-  feeTier: string;
+// Tipo para la posición
+interface Position {
+  id?: string;
+  tokenPair?: string;
+  currentPrice?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  inRange?: boolean;
+  liquidity?: string | number;
+  unclaimedFees?: string | number;
+  apr?: number;
+  impermanentLoss?: number;
+  feeTier?: string;
+  positionId?: string;
+  owner?: string;
+  lastUpdated?: string;
+  [key: string]: unknown;
 }
 
-export const PositionCard = ({
-  tokenPair,
-  currentPrice,
-  minPrice,
-  maxPrice,
-  inRange,
-  unclaimedFees,
-  apr,
-  impermanentLoss,
-  liquidity,
-  volume24h,
-  feeTier,
-}: PositionCardProps) => {
-  const pricePosition = ((currentPrice - minPrice) / (maxPrice - minPrice)) * 100;
-  
+interface PositionCardProps {
+  position: Position;
+}
+
+const PositionCard: React.FC<PositionCardProps> = ({ position }) => {
+  // Valores por defecto seguros
+  const safePosition = {
+    id: position?.id || 'unknown',
+    tokenPair: position?.tokenPair || 'Unknown/Unknown',
+    currentPrice: position?.currentPrice || 0,
+    minPrice: position?.minPrice || 0,
+    maxPrice: position?.maxPrice || 0,
+    inRange: position?.inRange ?? false,
+    liquidity: position?.liquidity || '0',
+    unclaimedFees: position?.unclaimedFees || '0',
+    apr: position?.apr || 0,
+    impermanentLoss: position?.impermanentLoss || 0,
+    feeTier: position?.feeTier || '0%',
+    positionId: position?.positionId || position?.id || 'N/A',
+    owner: position?.owner || 'Unknown',
+    lastUpdated: position?.lastUpdated || new Date().toISOString()
+  };
+
+  // Formatear valores de manera segura
+  const formatValue = (value: string | number | undefined, prefix = ''): string => {
+    if (value === undefined || value === null) return `${prefix}0`;
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(numValue)) return `${prefix}0`;
+    return `${prefix}${numValue.toLocaleString()}`;
+  };
+
+  const formatCurrency = (value: string | number | undefined): string => {
+    return formatValue(value, '$');
+  };
+
+  const formatPercentage = (value: number | undefined): string => {
+    if (!value || isNaN(value)) return '0%';
+    return `${value.toFixed(2)}%`;
+  };
+
+  const formatDate = (dateString: string): string => {
+    try {
+      return new Date(dateString).toLocaleDateString('es-ES');
+    } catch {
+      return 'N/A';
+    }
+  };
+
+  const { inRange } = safePosition;
+
   return (
-    <Card className="bg-gradient-card border-border shadow-card hover:shadow-glow transition-all duration-300">
-      <CardHeader>
+    <Card className={`transition-all hover:shadow-lg ${inRange ? 'border-green-200 bg-green-50/30' : 'border-orange-200 bg-orange-50/30'}`}>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-bold">{tokenPair}</CardTitle>
-          <div className="flex items-center space-x-2">
-            <Badge variant={inRange ? "default" : "destructive"} className="text-xs">
+          <CardTitle className="text-lg font-semibold">
+            {safePosition.tokenPair}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant={inRange ? "default" : "secondary"} className={inRange ? "bg-green-500" : "bg-orange-500"}>
               {inRange ? "In Range" : "Out of Range"}
             </Badge>
-            <Badge variant="secondary" className="text-xs">
-              {feeTier}
+            <Badge variant="outline" className="text-xs">
+              {safePosition.feeTier}
             </Badge>
           </div>
         </div>
+        <CardDescription className="text-xs text-gray-500">
+          Position ID: {safePosition.positionId} • {formatDate(safePosition.lastUpdated)}
+        </CardDescription>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* Price Range */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Min: ${minPrice.toFixed(4)}</span>
-            <span className="font-medium text-foreground">
-              Current: ${currentPrice.toFixed(4)}
-            </span>
-            <span>Max: ${maxPrice.toFixed(4)}</span>
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-xs text-gray-500 mb-1">Min Price</div>
+            <div className="font-semibold">{formatCurrency(safePosition.minPrice)}</div>
           </div>
-          <div className="relative">
-            <Progress value={Math.max(0, Math.min(100, pricePosition))} className="h-2" />
-            <div 
-              className="absolute top-0 w-1 h-2 bg-primary rounded-full transform -translate-x-1/2"
-              style={{ left: `${Math.max(2, Math.min(98, pricePosition))}%` }}
-            />
+          <div className="text-center p-2 bg-blue-50 rounded">
+            <div className="text-xs text-gray-500 mb-1">Current</div>
+            <div className="font-semibold text-blue-600">{formatCurrency(safePosition.currentPrice)}</div>
+          </div>
+          <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-xs text-gray-500 mb-1">Max Price</div>
+            <div className="font-semibold">{formatCurrency(safePosition.maxPrice)}</div>
           </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Unclaimed Fees</p>
-            <p className="text-sm font-semibold text-success">{unclaimedFees}</p>
+        {/* Metrics */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-blue-500" />
+            <div>
+              <div className="text-xs text-gray-500">Liquidity</div>
+              <div className="font-semibold">{formatCurrency(safePosition.liquidity)}</div>
+            </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">APR</p>
-            <div className="flex items-center space-x-1">
-              <span className="text-sm font-semibold">{apr.toFixed(2)}%</span>
-              <TrendingUp className="h-3 w-3 text-success" />
+          
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-green-500" />
+            <div>
+              <div className="text-xs text-gray-500">Unclaimed Fees</div>
+              <div className="font-semibold text-green-600">{formatCurrency(safePosition.unclaimedFees)}</div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Liquidity</p>
-            <p className="text-sm font-semibold">{liquidity}</p>
+        {/* Performance Metrics */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-purple-500" />
+            <div>
+              <div className="text-xs text-gray-500">APR</div>
+              <div className="font-semibold text-purple-600">{formatPercentage(safePosition.apr)}</div>
+            </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">24h Volume</p>
-            <p className="text-sm font-semibold">{volume24h}</p>
+          
+          <div className="flex items-center gap-2">
+            <AlertTriangle className={`h-4 w-4 ${safePosition.impermanentLoss > 5 ? 'text-red-500' : 'text-yellow-500'}`} />
+            <div>
+              <div className="text-xs text-gray-500">IL</div>
+              <div className={`font-semibold ${safePosition.impermanentLoss > 5 ? 'text-red-600' : 'text-yellow-600'}`}>
+                {formatPercentage(safePosition.impermanentLoss)}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Impermanent Loss */}
-        <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-          <div className="flex items-center space-x-2">
-            <TrendingDown className="h-4 w-4 text-destructive" />
-            <span className="text-sm text-muted-foreground">IL:</span>
-          </div>
-          <span className={`text-sm font-semibold ${impermanentLoss < 0 ? 'text-destructive' : 'text-success'}`}>
-            {impermanentLoss.toFixed(2)}%
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="flex space-x-2 pt-2">
-          <Button variant="gradient" size="sm" className="flex-1">
-            Rebalance
-          </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4" />
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2">
+          <Button variant="outline" size="sm" className="flex-1">
+            <Activity className="h-4 w-4 mr-1" />
+            Manage
           </Button>
           {!inRange && (
-            <Button variant="warning" size="sm">
-              <AlertTriangle className="h-4 w-4" />
+            <Button variant="secondary" size="sm" className="flex-1">
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              Rebalance
             </Button>
           )}
+        </div>
+
+        {/* Owner info (for debugging) */}
+        <div className="text-xs text-gray-400 border-t pt-2">
+          Owner: {safePosition.owner.slice(0, 6)}...{safePosition.owner.slice(-4)}
         </div>
       </CardContent>
     </Card>
   );
 };
+
+export default PositionCard;

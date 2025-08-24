@@ -59,6 +59,23 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- GraphQL (for swap data)
+- Web3 integration (wagmi, viem)
+
+## Features
+
+### Swap Data Integration
+The application now includes a GraphQL integration to fetch swap data from the Uniswap indexer:
+
+- **GraphQL Endpoint**: `https://indexer.bigdevenergy.link/bb1a9fc/v1/graphql`
+- **Swap History Panel**: Displays recent swaps for connected wallets
+- **Real-time Data**: Shows swap amounts, tokens, timestamps, and pool information
+- **Demo Mode**: Falls back to mock data when the GraphQL endpoint is unavailable
+
+### Wallet Integration
+- Connect your wallet to automatically fetch swap data
+- View swap history for any Ethereum address
+- Real-time updates when wallet connection changes
 
 ## How can I deploy this project?
 
